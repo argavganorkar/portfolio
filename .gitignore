@@ -1,0 +1,18 @@
+
+# Backup snapshots (kept locally, not needed in the deployed repo)
+portfolio_31_backup.html
+portfolio_31_backup2.html
+
+# Unused/orphaned source assets (not referenced by any page)
+Gradient.png
+Movie.png
+City.png
+LAB Final.png
+NEW FInal.png
+
+# Working reference file used to extract hero images — not served
+only for doodle n image reference in hero.html
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
