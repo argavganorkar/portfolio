@@ -253,6 +253,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   color: rgba(255,255,255,0.80);
   text-shadow: 0 1px 8px rgba(0,0,0,0.4);
 }
+.label-short { display: none; }
 
 #about {
   padding: 140px 115.2px 130px;
@@ -1062,11 +1063,14 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 
   /* ── Hero ── */
   #hero { height: 100vh; height: 100svh; min-height: 560px; }
-  .hero-center { width: 92%; max-width: none; }
+  .hero-center { width: 92%; max-width: none; top: 78%; }
   .hero-name { font-size: 40px; white-space: normal; }
   .hero-tagline { font-size: 14px; }
   .hero-bottom-row { padding: 0 20px; }
   .hero-bottom-label { font-size: 10px; }
+  .label-full { display: none; }
+  .label-short { display: inline; }
+  .scroll-mouse { display: none; }
 
 
   /* ── About ── */
@@ -1088,7 +1092,8 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   }
   .pcard-cta { display: none !important; }
   .pcard-cat { display: none !important; }
-  .pcard-meta { justify-content: flex-end; }
+  .pcard-meta { display: none; }
+  .pcard-num { display: none; }
   .projects-cursor { display: none !important; }
 
   /* ── Notebook: pinned corkboard -> swipe carousel ── */
@@ -1115,13 +1120,32 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
      they're still nested the same way in markup (and on desktop,
      unchanged). */
   .nb-left-fixed, .nb-left-col { display: contents; }
+  .nb-still-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .nb-still-label::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.7;
+  }
   .nb-still-label, .nb-heading, .nb-subtext {
     order: 1;
     padding-left: 20px;
     padding-right: 20px;
   }
-  .nb-subtext { margin-bottom: 32px; }
-  .nb-heading { font-size: 40px; }
+  .nb-subtext { margin-bottom: 32px; max-width: none; }
+  .nb-heading { font-size: clamp(24px, 7.5vw, 34px); white-space: nowrap; }
+  .nb-heading br { display: none; }
   .nb-connect-section {
     order: 3;
     margin-top: 0;
@@ -1225,8 +1249,8 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 
   <!-- Bottom metadata row -->
   <div class="hero-bottom-row" aria-hidden="true">
-    <span class="hero-bottom-label">Industrial Design × CMF</span>
-    <span class="hero-bottom-label">Nagpur, India</span>
+    <span class="hero-bottom-label"><span class="label-full">Industrial Design × CMF</span><span class="label-short">ID X CMF</span></span>
+    <span class="hero-bottom-label"><span class="label-full">Nagpur, India</span><span class="label-short">NGP, INDIA</span></span>
   </div>
 
   <div class="scroll-mouse" aria-hidden="true"></div>
@@ -1371,7 +1395,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 <div class="nb-left-fixed" id="nbLeftCol">
   <div class="nb-left-col">
       <p class="nb-still-label">Still In Process</p>
-      <h2 class="nb-heading">Currently<br><em>Wondering</em></h2>
+      <h2 class="nb-heading">Currently<br> <em>Wondering</em></h2>
       <p class="nb-subtext">Design is not about having answers.<br>It is about being curious to know things.</p>
 
       <div class="nb-connect-section">
@@ -1627,31 +1651,59 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 </script>
 <script>
 /* ============================================================
-   NOTEBOOK BOARD — MOBILE AUTOPLAY CAROUSEL
-   Advances to the next slide every 3s. Pauses for as long as the user
-   is touching/holding the board (so a slow look or an in-progress swipe
-   is never interrupted by an auto-advance mid-gesture), resuming the
-   3s cycle fresh once they let go. Desktop never runs this — #nbBoard
+   NOTEBOOK BOARD — MOBILE CAROUSEL: INFINITE LOOP + AUTOPLAY
+   A clone of the first slide (chetak) is appended after the last real
+   slide (gradient) so both a manual swipe and the autoplay timer can
+   keep scrolling "forward" past gradient instead of hitting a dead
+   stop. Once the clone settles into view, we silently snap scrollLeft
+   back to the real first slide with no animation — since the clone is
+   visually identical, the reset is invisible and it reads as gradient
+   looping straight back into chetak. Advances every 3s; pauses for as
+   long as the user is touching/holding the board, resuming the 3s
+   cycle fresh once they let go. Desktop never runs this — #nbBoard
    there isn't a real scroll container (.nb-slide is display:contents).
    ============================================================ */
 (function () {
   var board = document.getElementById('nbBoard');
   if (!board) return;
 
+  var realSlides = Array.prototype.slice.call(board.querySelectorAll('.nb-slide'));
+  var REAL_COUNT = realSlides.length;
+  if (REAL_COUNT < 2) return;
+
+  var clone = realSlides[0].cloneNode(true);
+  clone.setAttribute('aria-hidden', 'true');
+  Array.prototype.forEach.call(clone.querySelectorAll('[id]'), function (el) { el.removeAttribute('id'); });
+  if (clone.id) clone.removeAttribute('id');
+  board.appendChild(clone);
+
   var AUTOPLAY_MS = 3000;
   var timer = null;
+  var settleTimer = null;
 
-  function slideCount() {
-    return board.querySelectorAll('.nb-slide').length;
+  function isMobile() { return window.innerWidth <= 768; }
+
+  // After any scroll (manual swipe OR the autoplay smooth-scroll) settles,
+  // check whether we landed on the appended clone — if so, jump back to
+  // the real first slide instantly so the loop never visibly rewinds.
+  function onScrollSettled() {
+    var w = board.clientWidth;
+    if (!w) return;
+    var idx = Math.round(board.scrollLeft / w);
+    if (idx >= REAL_COUNT) {
+      board.scrollLeft = 0;
+    }
   }
+  board.addEventListener('scroll', function () {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(onScrollSettled, 120);
+  }, { passive: true });
 
   function advance() {
     var w = board.clientWidth;
-    var n = slideCount();
-    if (!w || !n) return;
+    if (!w) return;
     var idx = Math.round(board.scrollLeft / w);
-    var next = (idx + 1) % n;
-    board.scrollTo({ left: next * w, behavior: 'smooth' });
+    board.scrollTo({ left: (idx + 1) * w, behavior: 'smooth' });
   }
 
   function startAutoplay() {
@@ -1661,8 +1713,6 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   function stopAutoplay() {
     if (timer) { clearInterval(timer); timer = null; }
   }
-
-  function isMobile() { return window.innerWidth <= 768; }
 
   board.addEventListener('touchstart', stopAutoplay, { passive: true });
   board.addEventListener('touchend', function () { if (isMobile()) startAutoplay(); }, { passive: true });

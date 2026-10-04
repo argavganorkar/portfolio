@@ -355,9 +355,13 @@ function slideCard(card, toFlipped) {
   card.querySelectorAll('.render-tab').forEach((t,i) =>
     t.classList.toggle('active', i === (toFlipped ? 1 : 0))
   );
+  if (toFlipped && window.innerWidth <= 768) {
+    var hint = card.querySelector('.swipe-hint');
+    if (hint) hint.style.display = 'none';
+  }
 }
 function showFace(tab) { slideCard(tab.closest('.render-card'), false); }
-function showCMF(tab)  { slideCard(tab.closest('.render-card'), true);  }
+function showCMF(tab)  { slideCard(tab.closest('.render-card'), true); if (window.innerWidth <= 768) { tab.style.display = 'none'; } }
 
 document.querySelectorAll('.render-card').forEach(card => {
   card.querySelector('.render-track').addEventListener('click', e => {

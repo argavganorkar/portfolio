@@ -481,6 +481,15 @@
   #other-projects { padding: 50px 20px 60px; }
   .other-grid { grid-template-columns: 1fr; gap: 16px; }
   .home-cta-wrap { padding: 20px 20px 28px; }
+  /* Benchmarking carousel: the 3-tab row ("Graphics"/"Colors"/
+     "Material & Finish") at desktop's 32px gap + font-size overflows a
+     narrow phone width with nothing to wrap/shrink it, stretching the
+     whole section wider than the viewport. */
+  .bench-wrap, .bench-slider-wrap, .bench-slider, .bench-slide, .bench-slide img {
+    max-width: 100%;
+  }
+  .bench-categories { gap: 10px; padding: 16px 10px; flex-wrap: wrap; }
+  .bench-cat { font-size: 11px; }
 }
 </style>
 </head>
@@ -744,10 +753,14 @@ function slideCard(card, toFlipped) {
   card.querySelectorAll('.render-tab').forEach((t,i) =>
     t.classList.toggle('active', i === (toFlipped ? 1 : 0))
   );
+  if (toFlipped && window.innerWidth <= 768) {
+    var hint = card.querySelector('.swipe-hint');
+    if (hint) hint.style.display = 'none';
+  }
 }
 
 function showFace(tab) { slideCard(tab.closest('.render-card'), false); }
-function showCMF(tab)  { slideCard(tab.closest('.render-card'), true);  }
+function showCMF(tab)  { slideCard(tab.closest('.render-card'), true); if (window.innerWidth <= 768) { tab.style.display = 'none'; } }
 
 document.querySelectorAll('.render-card').forEach(card => {
   const track = card.querySelector('.render-track');
