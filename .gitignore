@@ -4,11 +4,11 @@ portfolio_31_backup.html
 portfolio_31_backup2.html
 
 # Unused/orphaned source assets (not referenced by any page)
-Gradient.png
-Movie.png
-City.png
-LAB Final.png
-NEW FInal.png
+assets/images/Gradient.png
+assets/images/Movie.png
+assets/images/City.png
+assets/images/LAB Final.png
+assets/images/NEW FInal.png
 
 # Working reference file used to extract hero images — not served
 only for doodle n image reference in hero.html
