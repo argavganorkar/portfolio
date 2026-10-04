@@ -1666,6 +1666,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
 (function () {
   var board = document.getElementById('nbBoard');
   if (!board) return;
+  if (window.innerWidth > 768) return; // desktop uses the absolute-stack crossfade system, not this scroll carousel
 
   var realSlides = Array.prototype.slice.call(board.querySelectorAll('.nb-slide'));
   var REAL_COUNT = realSlides.length;
@@ -1675,6 +1676,13 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   clone.setAttribute('aria-hidden', 'true');
   Array.prototype.forEach.call(clone.querySelectorAll('[id]'), function (el) { el.removeAttribute('id'); });
   if (clone.id) clone.removeAttribute('id');
+  // The clone must never carry the desktop crossfade's "active" marker —
+  // mobile already forces every .nb-board-img to opacity:1 regardless of
+  // class, so this class serves no purpose here and stripping it is pure
+  // insurance against ever polluting the desktop absolute-stack system.
+  Array.prototype.forEach.call(clone.querySelectorAll('.nb-board-active'), function (el) {
+    el.classList.remove('nb-board-active');
+  });
   board.appendChild(clone);
 
   var AUTOPLAY_MS = 3000;
