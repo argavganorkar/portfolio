@@ -1,6 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Registered here (classic, parser-blocking, in <head>) rather than at
+     the bottom of <body> because pagereveal fires on the incoming
+     document before its first rendering opportunity — before a
+     body-end script would have had a chance to run. Placing it at the
+     bottom made the hero morph work only intermittently, since it was a
+     race against how fast the browser reached first paint. A CSS rule
+     is injected (rather than querying the DOM directly) so it still
+     applies correctly even if the target element hasn't been parsed yet
+     — the rule simply takes effect once that element appears. -->
+<script>
+(function () {
+  if (!('startViewTransition' in document)) return;
+  var FILE_TO_KEY = {
+    'bajaj-portfolio_11.html': 'bajaj',
+    'weava-portfolio_1.html': 'weava',
+    'triumph-portfolio_2.html': 'triumph'
+  };
+  function keyFromUrl(url) {
+    if (!url) return null;
+    try { return FILE_TO_KEY[new URL(url, location.href).pathname.split('/').pop()] || null; }
+    catch (e) { return null; }
+  }
+  window.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) return;
+    var myKey = document.documentElement.getAttribute('data-page-key');
+    var selector;
+    if (myKey) {
+      selector = '[data-hero-self]';
+    } else {
+      var fromUrl = (window.navigation && navigation.activation && navigation.activation.from) ? navigation.activation.from.url : null;
+      var fromKey = keyFromUrl(fromUrl);
+      if (!fromKey) return;
+      selector = '[data-hero-link="' + fromKey + '"]';
+    }
+    var style = document.createElement('style');
+    style.textContent = selector + ' { view-transition-name: project-hero; }';
+    document.head.appendChild(style);
+  });
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Argav Ganorkar — Industrial Designer</title>
@@ -54,6 +94,52 @@ body {
 img { display: block; max-width: 100%; }
 a { text-decoration: none; color: inherit; }
 button { font-family: inherit; border: none; background: none; cursor: pointer; }
+
+/* ── PAGE TRANSITION ──
+   Primary: native cross-document View Transitions (Chrome/Edge 126+,
+   Safari 18.2+) — opting in makes the browser itself morph a clicked
+   project thumbnail into that project's hero image, growing it in place
+   instead of a hard page cut. `view-transition-name` is assigned
+   dynamically by the script at the bottom of the page (only to the one
+   element actually involved in a given navigation) rather than declared
+   statically here — a static name on every thumbnail would make the
+   browser auto-pair ANY same-named element present on both the old and
+   new page, including ones the user never clicked (e.g. going back from
+   a project would make unrelated sibling thumbnails slide around too). ── */
+@view-transition { navigation: auto; }
+
+/* Hide both the old and new page snapshots for the hold period, leaving
+   a solid black backdrop (this group's own background) behind — not
+   "whichever page you're leaving", since that was white when going
+   BACKWARD from a case-study page to the dark home page. This way the
+   pause is black regardless of direction. The new page then snaps in
+   once the transition completes; only the named hero image (set
+   dynamically, see below) animates on top of this backdrop. */
+::view-transition-group(root) {
+  animation-duration: 0.5s;
+  background-color: #0B0B0B;
+}
+::view-transition-old(root) { animation: none; opacity: 0; }
+::view-transition-new(root) { animation: vtRevealNew 0.001s linear 0.5s both; }
+@keyframes vtRevealNew { from { opacity: 0; } to { opacity: 1; } }
+
+::view-transition-group(project-hero) {
+  animation-duration: 0.5s;
+  animation-timing-function: var(--ease-out);
+}
+
+/* Fallback: browsers without View Transition support (Firefox) get a
+   plain crossfade instead — no thumbnail morph, but still a soft
+   transition rather than an instant hard cut. */
+@supports not (view-transition-name: none) {
+  body { animation: pageFadeIn 0.45s var(--ease-out); }
+  @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  body.page-exit { animation: pageFadeOut 0.2s var(--ease-out) forwards; }
+  @keyframes pageFadeOut { to { opacity: 0; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  body, body.page-exit { animation: none; }
+}
 
 /* ==========================================================
    FIXED-CANVAS SCALE LOCK
@@ -1389,7 +1475,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
     <article class="pcard" role="listitem" tabindex="0" aria-label="Bajaj Pulsar NS 400 — CMFG Design, 2026">
       <a href="pages/bajaj-portfolio_11.html" class="pcard-cover pcard-prefetch" aria-hidden="true" tabindex="-1"></a>
       
-      <img class="pcard-img" id="imgBajaj" src="" width="1000" height="563" alt="Bajaj Pulsar NS 400 CMF project">
+      <img class="pcard-img" id="imgBajaj" src="" width="1000" height="563" alt="Bajaj Pulsar NS 400 CMF project" data-hero-link="bajaj">
       <div class="pcard-overlay" aria-hidden="true"></div>
       <span class="pcard-num" aria-hidden="true">01</span>
       <div class="pcard-body">
@@ -1424,7 +1510,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
     <article class="pcard" role="listitem" tabindex="0" aria-label="Weava — Material Exploration, 2026">
       <a href="pages/weava-portfolio_1.html" class="pcard-cover pcard-prefetch" aria-hidden="true" tabindex="-1"></a>
       
-      <img class="pcard-img" id="imgWeava" src="" width="1000" height="563" alt="Weava material exploration project">
+      <img class="pcard-img" id="imgWeava" src="" width="1000" height="563" alt="Weava material exploration project" data-hero-link="weava">
       <div class="pcard-overlay" aria-hidden="true"></div>
       <span class="pcard-num" aria-hidden="true">03</span>
       <div class="pcard-body">
@@ -1442,7 +1528,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
     <article class="pcard" role="listitem" tabindex="0" aria-label="Triumph Bobber — CMFG Design, 2025">
       <a href="pages/triumph-portfolio_2.html" class="pcard-cover pcard-prefetch" aria-hidden="true" tabindex="-1"></a>
       
-      <img class="pcard-img" id="imgTriumph" src="" width="1000" height="563" alt="Triumph Bobber CMF project">
+      <img class="pcard-img" id="imgTriumph" src="" width="1000" height="563" alt="Triumph Bobber CMF project" data-hero-link="triumph">
       <div class="pcard-overlay" aria-hidden="true"></div>
       <span class="pcard-num" aria-hidden="true">04</span>
       <div class="pcard-body">
@@ -2423,6 +2509,61 @@ emailWrap.addEventListener('keydown', e => { if (e.key === 'Enter') doCopy(); })
   document.querySelectorAll('.pcard-prefetch').forEach(function (a) {
     a.addEventListener('mouseenter', function () { prefetch(a.getAttribute('href')); }, { passive: true });
     a.addEventListener('touchstart', function () { prefetch(a.getAttribute('href')); }, { passive: true });
+  });
+})();
+</script>
+
+<!-- Fallback fade-out for browsers without native View Transitions
+     (Firefox): when the browser supports startViewTransition, skip this
+     entirely and let its automatic cross-document transition (declared
+     via @view-transition in the stylesheet) morph the thumbnail into the
+     project hero on its own — no JS trigger needed for that path.
+     Skipped for reduced-motion, modified clicks (new tab/window), and
+     the Ola card's placeholder "#" link. The pageshow listener clears
+     the exit class on bfcache back/forward restores so a "back"
+     navigation never lands on a page stuck invisible. -->
+<script>
+(function () {
+  if ('startViewTransition' in document) return;
+  var EXIT_MS = 200;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.pcard-prefetch, .pcard-cta').forEach(function (a) {
+    var href = a.getAttribute('href');
+    if (!href || href.charAt(0) === '#') return;
+    a.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      if (reduceMotion) return;
+      e.preventDefault();
+      document.body.classList.add('page-exit');
+      setTimeout(function () { window.location.href = href; }, EXIT_MS);
+    });
+  });
+  window.addEventListener('pageshow', function () { document.body.classList.remove('page-exit'); });
+})();
+</script>
+
+<!-- Leaving this page: tag the thumbnail matching the destination
+     project with view-transition-name, so clicking it morphs into that
+     project's hero. (Arrival-side tagging for coming back here lives in
+     the <head> script instead — see there for why.) -->
+<script>
+(function () {
+  if (!('startViewTransition' in document)) return;
+  var FILE_TO_KEY = {
+    'bajaj-portfolio_11.html': 'bajaj',
+    'weava-portfolio_1.html': 'weava',
+    'triumph-portfolio_2.html': 'triumph'
+  };
+  function keyFromUrl(url) {
+    if (!url) return null;
+    try { return FILE_TO_KEY[new URL(url, location.href).pathname.split('/').pop()] || null; }
+    catch (e) { return null; }
+  }
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    var destKey = keyFromUrl(e.activation && e.activation.entry && e.activation.entry.url);
+    var el = destKey && document.querySelector('[data-hero-link="' + destKey + '"]');
+    if (el) el.style.viewTransitionName = 'project-hero';
   });
 })();
 </script>

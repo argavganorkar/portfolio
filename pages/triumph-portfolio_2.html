@@ -1,6 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page-key="triumph">
 <head>
+<!-- Registered here (classic, parser-blocking, in <head>) rather than at
+     the bottom of <body> because pagereveal fires on the incoming
+     document before its first rendering opportunity — before a
+     body-end script would have had a chance to run. Placing it at the
+     bottom made the hero morph work only intermittently, since it was a
+     race against how fast the browser reached first paint. A CSS rule
+     is injected (rather than querying the DOM directly) so it still
+     applies correctly even if the target element hasn't been parsed yet
+     — the rule simply takes effect once that element appears. -->
+<script>
+(function () {
+  if (!('startViewTransition' in document)) return;
+  var FILE_TO_KEY = {
+    'bajaj-portfolio_11.html': 'bajaj',
+    'weava-portfolio_1.html': 'weava',
+    'triumph-portfolio_2.html': 'triumph'
+  };
+  function keyFromUrl(url) {
+    if (!url) return null;
+    try { return FILE_TO_KEY[new URL(url, location.href).pathname.split('/').pop()] || null; }
+    catch (e) { return null; }
+  }
+  window.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) return;
+    var myKey = document.documentElement.getAttribute('data-page-key');
+    var selector;
+    if (myKey) {
+      selector = '[data-hero-self]';
+    } else {
+      var fromUrl = (window.navigation && navigation.activation && navigation.activation.from) ? navigation.activation.from.url : null;
+      var fromKey = keyFromUrl(fromUrl);
+      if (!fromKey) return;
+      selector = '[data-hero-link="' + fromKey + '"]';
+    }
+    var style = document.createElement('style');
+    style.textContent = selector + ' { view-transition-name: project-hero; }';
+    document.head.appendChild(style);
+  });
+})();
+</script>
   <meta charset="UTF-8">
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +57,44 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { max-width:100%; overflow-x:hidden; scroll-behavior:smooth; }
   body { background:#fff; font-family:'Inter',sans-serif; }
+
+  /* ── PAGE TRANSITION ──
+     Primary: native cross-document View Transitions (Chrome/Edge 126+,
+     Safari 18.2+). view-transition-name is assigned dynamically by the
+     script at the bottom of the page (only to the one element actually
+     involved in a given navigation) rather than declared statically
+     here — see that script for why. ── */
+  @view-transition { navigation: auto; }
+
+  /* Hide both the old and new page snapshots for the hold period,
+     leaving a solid black backdrop (this group's own background)
+     behind — not "whichever page you're leaving", since that was white
+     when going BACKWARD to the dark home page. The new page snaps in
+     once the transition completes; only the named hero image animates
+     on top of this backdrop. */
+  ::view-transition-group(root) {
+    animation-duration: 0.5s;
+    background-color: #0B0B0B;
+  }
+  ::view-transition-old(root) { animation: none; opacity: 0; }
+  ::view-transition-new(root) { animation: vtRevealNew 0.001s linear 0.5s both; }
+  @keyframes vtRevealNew { from { opacity: 0; } to { opacity: 1; } }
+
+  ::view-transition-group(project-hero) {
+    animation-duration: 0.5s;
+    animation-timing-function: var(--ease-out);
+  }
+
+  /* Fallback: browsers without View Transition support (Firefox). */
+  @supports not (view-transition-name: none) {
+    body { animation: pageFadeIn 0.45s var(--ease-out); }
+    @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    body.page-exit { animation: pageFadeOut 0.2s var(--ease-out) forwards; }
+    @keyframes pageFadeOut { to { opacity: 0; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body, body.page-exit { animation: none; }
+  }
   img { max-width:100%; width:100%; height:auto; display:block; }
   .sec-img { display:block; width:100%; }
   .sec-img img { width:100%; height:auto; display:block; }
@@ -323,7 +401,7 @@
 <div id="scaleOuter"><div id="scaleRoot">
 
 <!-- pages 01–14: all normal -->
-<section class="sec-img"><img src="../assets/images/triumph/img-01.webp" width="1920" height="1080" fetchpriority="high" alt="Page 01"></section>
+<section class="sec-img"><img src="../assets/images/triumph/img-01.webp" width="1920" height="1080" fetchpriority="high" alt="Page 01" data-hero-self="triumph"></section>
 <section class="sec-img"><img src="../assets/images/triumph/img-02.webp" width="1920" height="656" loading="lazy" alt="Page 02"></section>
 <section class="sec-img"><img src="../assets/images/triumph/img-03.webp" width="1920" height="1080" loading="lazy" alt="Page 03"></section>
 <section class="sec-img"><img src="../assets/images/triumph/img-04.webp" width="1920" height="1080" loading="lazy" alt="Page 04"></section>
@@ -489,7 +567,7 @@ btnTop.addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}
   <p class="other-heading">View other projects</p>
   <div class="other-grid">
     <a class="other-card" href="bajaj-portfolio_11.html">
-      <div class="other-card-img-wrap"><img src="../assets/images/triumph/img-25.webp" width="1000" height="563" loading="lazy" alt="Bajaj Pulsar NS 400"></div>
+      <div class="other-card-img-wrap"><img src="../assets/images/triumph/img-25.webp" width="1000" height="563" loading="lazy" alt="Bajaj Pulsar NS 400" data-hero-link="bajaj"></div>
       <div class="other-card-info">
         <span class="other-card-cat">CMFG Design</span>
         <div class="other-card-row">
@@ -510,8 +588,8 @@ btnTop.addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}
       </div>
       <span class="other-card-arrow">↗</span>
     </a>
-    <a class="other-card" href="../index.html#projects">
-      <div class="other-card-img-wrap"><img src="../assets/images/triumph/img-27.webp" width="1000" height="563" loading="lazy" alt="Weava"></div>
+    <a class="other-card" href="weava-portfolio_1.html">
+      <div class="other-card-img-wrap"><img src="../assets/images/triumph/img-27.webp" width="1000" height="563" loading="lazy" alt="Weava" data-hero-link="weava"></div>
       <div class="other-card-info">
         <span class="other-card-cat">Material Exploration</span>
         <div class="other-card-row">
@@ -563,6 +641,59 @@ btnTop.addEventListener('click', () => window.scrollTo({top:0,behavior:'smooth'}
   setTimeout(apply, 50);
   setTimeout(apply, 400);
   apply();
+})();
+</script>
+
+<!-- Fallback fade-out for browsers without native View Transitions
+     (Firefox) — Chrome/Safari get the automatic thumbnail-to-hero morph
+     via the @view-transition CSS rule above with no JS needed. Skipped
+     for reduced-motion and modified clicks (new tab/window). pageshow
+     clears the exit class on bfcache back/forward restores so a "back"
+     navigation isn't stuck invisible. -->
+<script>
+(function () {
+  if ('startViewTransition' in document) return;
+  var EXIT_MS = 200;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.other-card').forEach(function (a) {
+    var href = a.getAttribute('href');
+    if (!href || href.charAt(0) === '#') return;
+    a.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      if (reduceMotion) return;
+      e.preventDefault();
+      document.body.classList.add('page-exit');
+      setTimeout(function () { window.location.href = href; }, EXIT_MS);
+    });
+  });
+  window.addEventListener('pageshow', function () { document.body.classList.remove('page-exit'); });
+})();
+</script>
+
+<!-- Leaving this page: tag the Other Projects thumbnail matching the
+     destination, or skip the transition entirely if going anywhere
+     that isn't a sibling project (home, external link, etc.). Arrival-
+     side tagging for coming back here lives in the <head> script. -->
+<script>
+(function () {
+  if (!('startViewTransition' in document)) return;
+  var FILE_TO_KEY = {
+    'bajaj-portfolio_11.html': 'bajaj',
+    'weava-portfolio_1.html': 'weava',
+    'triumph-portfolio_2.html': 'triumph'
+  };
+  function keyFromUrl(url) {
+    if (!url) return null;
+    try { return FILE_TO_KEY[new URL(url, location.href).pathname.split('/').pop()] || null; }
+    catch (e) { return null; }
+  }
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    var destKey = keyFromUrl(e.activation && e.activation.entry && e.activation.entry.url);
+    if (!destKey) { e.viewTransition.skipTransition(); return; }
+    var el = document.querySelector('[data-hero-link="' + destKey + '"]');
+    if (el) el.style.viewTransitionName = 'project-hero';
+  });
 })();
 </script>
 
