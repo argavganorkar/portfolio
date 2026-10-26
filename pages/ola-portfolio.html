@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en" data-page-key="ola">
+<head>
+<!-- Registered here (classic, parser-blocking, in <head>) rather than at
+     the bottom of <body> because pagereveal fires on the incoming
+     document before its first rendering opportunity — before a
+     body-end script would have had a chance to run. Placing it at the
+     bottom made the hero morph work only intermittently, since it was a
+     race against how fast the browser reached first paint. A CSS rule
+     is injected (rather than querying the DOM directly) so it still
+     applies correctly even if the target element hasn't been parsed yet
+     — the rule simply takes effect once that element appears. -->
+<script>
+(function () {
+  if (!('startViewTransition' in document)) return;
+  var FILE_TO_KEY = {
+    'bajaj-portfolio_11.html': 'bajaj',
+    'weava-portfolio_1.html': 'weava',
+    'triumph-portfolio_2.html': 'triumph',
+    'ola-portfolio.html': 'ola'
+  };
+  function keyFromUrl(url) {
+    if (!url) return null;
+    try { return FILE_TO_KEY[new URL(url, location.href).pathname.split('/').pop()] || null; }
+    catch (e) { return null; }
+  }
+  window.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) return;
+    var myKey = document.documentElement.getAttribute('data-page-key');
+    var selector;
+    if (myKey) {
+      selector = '[data-hero-self]';
+    } else {
+      var fromUrl = (window.navigation && navigation.activation && navigation.activation.from) ? navigation.activation.from.url : null;
+      var fromKey = keyFromUrl(fromUrl);
+      if (!fromKey) return;
+      selector = '[data-hero-link="' + fromKey + '"]';
+    }
+    var style = document.createElement('style');
+    style.textContent = selector + ' { view-transition-name: project-hero; }';
+    document.head.appendChild(style);
+  });
+})();
+</script>
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ola Roadster X+ — CMFG Design · Argav Ganorkar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0B0B; --ink: #EDECEA; --ink-2: #767370;
+    --border: #242220; --accent: #3D7EFF;
+    --body: 'DM Sans', system-ui, sans-serif;
+    --ease-out: cubic-bezier(0.16,1,0.3,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { max-width:100%; overflow-x:hidden; scroll-behavior:smooth; }
+  body { background:#fff; font-family:'Inter',sans-serif; }
+
+  /* ── PAGE TRANSITION ──
+     Primary: native cross-document View Transitions (Chrome/Edge 126+,
+     Safari 18.2+). view-transition-name is assigned dynamically by the
+     script at the bottom of the page (only to the one element actually
+     involved in a given navigation) rather than declared statically
+     here — see that script for why. ── */
+  @view-transition { navigation: auto; }
+
+  /* Hide both the old and new page snapshots for the hold period,
+     leaving a solid black backdrop (this group's own background)
+     behind — not "whichever page you're leaving", since that was white
+     when going BACKWARD to the dark home page. The new page snaps in
+     once the transition completes; only the named hero image animates
+     on top of this backdrop. */
+  ::view-transition-group(root) {
+    animation-duration: 0.5s;
+    background-color: #0B0B0B;
+  }
+  ::view-transition-old(root) { animation: none; opacity: 0; }
+  ::view-transition-new(root) { animation: vtRevealNew 0.001s linear 0.5s both; }
+  @keyframes vtRevealNew { from { opacity: 0; } to { opacity: 1; } }
+
+  ::view-transition-group(project-hero) {
+    animation-duration: 0.5s;
+    animation-timing-function: var(--ease-out);
+  }
+
+  /* Fallback: browsers without View Transition support (Firefox). */
+  @supports not (view-transition-name: none) {
+    body { animation: pageFadeIn 0.45s var(--ease-out); }
+    @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    body.page-exit { animation: pageFadeOut 0.2s var(--ease-out) forwards; }
+    @keyframes pageFadeOut { to { opacity: 0; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body, body.page-exit { animation: none; }
+  }
+  img { max-width:100%; width:100%; height:auto; display:block; }
+  .sec-img { display:block; width:100%; }
+  .sec-img img { width:100%; height:auto; display:block; }
+
+  /* ── INTERACTIVE SLIDE CAROUSEL (shared by Benchmarking & Persona) ── */
+  .bench-wrap { position: relative; background: #fff; overflow: hidden; }
+  .bench-categories {
+    display: flex; justify-content: center; gap: 32px;
+    padding: 24px 0 20px; border-bottom: 1px solid #eee;
+  }
+  .bench-cat {
+    font-size: 14px; font-weight: 600; color: #bbb; cursor: pointer;
+    padding: 4px 0; border-bottom: 2px solid transparent;
+    transition: all 0.2s; letter-spacing: 0.03em;
+  }
+  .bench-cat.active { color: #1a5cff; border-bottom: 2px solid #1a5cff; }
+  .bench-slider-wrap { position: relative; overflow: hidden; }
+  .bench-slider { display: flex; transition: transform 0.45s cubic-bezier(0.4,0,0.2,1); }
+  .bench-slide { min-width: 100%; flex-shrink: 0; }
+  .bench-slide img { width: 100%; display: block; }
+  .bench-dots { display: flex; justify-content: center; gap: 8px; padding: 0 0 20px; }
+  .bench-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #ddd;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .bench-dot.active { background: #1a5cff; transform: scale(1.2); }
+  .bench-click-zone { position: absolute; top: 0; bottom: 0; width: 50%; cursor: pointer; z-index: 10; }
+  .bench-click-zone.left { left: 0; }
+  .bench-click-zone.right { right: 0; }
+
+  /* ── NDA LOCK ── */
+  #nda-lock {
+    background: #0B0B0B;
+    padding: 100px 115.2px;
+    display: flex;
+    justify-content: center;
+  }
+  .nda-lock-inner { max-width: 560px; text-align: center; }
+  .nda-lock-icon { width: 40px; height: 40px; color: #3D7EFF; margin: 0 auto 24px; display: block; }
+  .nda-lock-title {
+    font-family: 'DM Sans', system-ui, sans-serif; font-size: 28px; font-weight: 700;
+    color: #EDECEA; margin-bottom: 12px;
+  }
+  .nda-lock-copy {
+    font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.6;
+    color: #9a9793; margin-bottom: 32px;
+  }
+  .nda-form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .nda-input {
+    flex: 1; min-width: 200px; max-width: 260px;
+    padding: 13px 16px; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    color: #EDECEA; font-family: 'Inter', sans-serif; font-size: 14px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .nda-input:focus { border-color: #3D7EFF; }
+  .nda-submit {
+    padding: 13px 28px; background: #3D7EFF; border: none; border-radius: 8px;
+    color: #fff; font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: background 0.2s, transform 0.2s;
+  }
+  .nda-submit:hover { background: #2a6bff; transform: translateY(-1px); }
+  .nda-error {
+    margin-top: 14px; color: #ff6b6b; font-size: 13px;
+    font-family: 'Inter', sans-serif; opacity: 0; transition: opacity 0.2s;
+  }
+  .nda-error.visible { opacity: 1; }
+  #nda-gated { display: none; }
+
+  /* FIXED-CANVAS SCALE LOCK (1920x1080 baseline, matches index.html) */
+  #scaleOuter { position:relative; overflow:hidden; width:100%; }
+  #scaleRoot { position:absolute; top:0; left:0; width:1920px; transform-origin: top left; }
+
+  /* NAV */
+  #nav {
+    position:fixed; top:0; left:0; width:1920px; transform-origin: top left; z-index:9997;
+    padding:22px 115.2px; display:flex; align-items:center;
+    justify-content:space-between;
+    transition:background 0.5s var(--ease-out), border-color 0.5s;
+    border-bottom:1px solid transparent;
+  }
+  #nav.scrolled {
+    background:rgba(11,11,11,0.90);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border-bottom-color:var(--border);
+  }
+  .nav-logo {
+    font-family:var(--body); font-size:1.0rem; font-weight:600;
+    letter-spacing:0.04em; color:var(--ink); text-decoration:none;
+  }
+  .nav-links { display:flex; align-items:center; gap:36px; list-style:none; }
+  .nav-links a {
+    font-family:var(--body); font-size:0.75rem; font-weight:400;
+    letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--ink-2); text-decoration:none; transition:color 0.2s;
+  }
+  .nav-links a:hover { color:#fff; }
+  .nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(0.5);
+    vertical-align: -4px;
+    margin-right: 0;
+    transition: width 0.25s cubic-bezier(0.16,1,0.3,1), opacity 0.2s, transform 0.25s cubic-bezier(0.16,1,0.3,1), margin-right 0.25s cubic-bezier(0.16,1,0.3,1);
+  }
+  .nav-icon svg { width: 18px; height: 18px; display: block; }
+  .nav-links a:hover .nav-icon,
+  .nav-links a:focus-visible .nav-icon {
+    width: 18px;
+    opacity: 1;
+    transform: scale(1);
+    margin-right: 7px;
+  }
+  @keyframes nav-phone-ring {
+    0%, 55%, 100% { transform: rotate(0deg); }
+    8% { transform: rotate(-18deg); }
+    16% { transform: rotate(14deg); }
+    24% { transform: rotate(-10deg); }
+    32% { transform: rotate(7deg); }
+    40% { transform: rotate(-4deg); }
+    48% { transform: rotate(2deg); }
+  }
+  .nav-links a:hover .nav-icon-phone svg,
+  .nav-links a:focus-visible .nav-icon-phone svg {
+    animation: nav-phone-ring 1.1s ease-in-out infinite;
+    transform-origin: 50% 25%;
+  }
+  @keyframes nav-text-ring {
+    0%, 55%, 100% { transform: rotate(0deg); }
+    8% { transform: rotate(-9deg); }
+    16% { transform: rotate(7deg); }
+    24% { transform: rotate(-5deg); }
+    32% { transform: rotate(3deg); }
+    40% { transform: rotate(-2deg); }
+    48% { transform: rotate(1deg); }
+  }
+  .nav-links a:hover .nav-icon-phone ~ .nav-label-contact,
+  .nav-links a:focus-visible .nav-icon-phone ~ .nav-label-contact {
+    display: inline-block;
+    animation: nav-text-ring 1.1s ease-in-out infinite;
+    transform-origin: 50% 100%;
+  }
+  @keyframes nav-hammer-swing {
+    0%, 60%, 100% { transform: rotate(0deg); }
+    8% { transform: rotate(-40deg); }
+    22% { transform: rotate(18deg); }
+    34% { transform: rotate(-10deg); }
+    44% { transform: rotate(6deg); }
+    52% { transform: rotate(-2deg); }
+  }
+  .nav-links a:hover .nav-icon-work svg,
+  .nav-links a:focus-visible .nav-icon-work svg {
+    animation: nav-hammer-swing 1s ease-in-out infinite;
+    transform-origin: 72% 27%;
+  }
+  @keyframes nav-letter-break {
+    0%, 60%, 100% { transform: translate(0,0) rotate(0deg) scale(1); }
+    10% { transform: translate(calc(var(--dx) * 0.4), calc(var(--dy) * 0.4)) rotate(calc(var(--dr) * 0.4)) scale(0.8); }
+    27% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)) scale(1.1); }
+    40% { transform: translate(calc(var(--dx) * -0.2), calc(var(--dy) * -0.2)) rotate(calc(var(--dr) * -0.15)) scale(0.96); }
+  }
+  .nav-links a:hover .nav-icon-work ~ .nav-letter,
+  .nav-links a:focus-visible .nav-icon-work ~ .nav-letter {
+    display: inline-block;
+    animation: nav-letter-break 1s cubic-bezier(.36,.07,.19,.97) infinite;
+  }
+  @keyframes nav-head-tilt {
+    0%, 100% { transform: rotate(0deg); }
+    15% { transform: rotate(-26deg); }
+    30% { transform: rotate(10deg); }
+    45% { transform: rotate(-16deg); }
+    60% { transform: rotate(7deg); }
+    75% { transform: rotate(-4deg); }
+    90% { transform: rotate(2deg); }
+  }
+  .nav-links a:hover .nav-icon-user .nav-head,
+  .nav-links a:focus-visible .nav-icon-user .nav-head {
+    animation: nav-head-tilt 1.1s ease-in-out infinite;
+  }
+  .nav-links .nav-resume {
+    color:#fff; border-bottom:1px solid rgba(255,255,255,0.3); padding-bottom:1px;
+  }
+  .nav-links .nav-resume:hover { border-bottom-color:#fff; }
+
+  /* SCROLL TO TOP */
+  #btn-top {
+    position:fixed; bottom:28px; right:28px; z-index:9998;
+    width:46px; height:46px; display:flex; align-items:center; justify-content:center;
+    background:rgba(10,10,10,0.82); border:1px solid rgba(255,255,255,0.12);
+    border-radius:50%; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    cursor:pointer; opacity:0; pointer-events:none;
+    transition:opacity 0.3s,background 0.2s,border-color 0.2s,box-shadow 0.2s,transform 0.2s;
+    box-shadow:0 2px 16px rgba(0,0,0,0.28);
+  }
+  #btn-top.visible { opacity:1; pointer-events:auto; }
+  #btn-top:hover {
+    background:rgba(26,92,255,0.92); border-color:rgba(26,92,255,0.6);
+    box-shadow:0 0 18px rgba(26,92,255,0.45),0 2px 16px rgba(0,0,0,0.3);
+    transform:translateY(-3px);
+  }
+  #btn-top svg { transition:transform 0.2s; }
+  #btn-top:hover svg { transform:translateY(-2px); }
+
+  /* OTHER PROJECTS */
+  #other-projects { background:#0B0B0B; padding:80px 115.2px 100px; }
+  .other-heading {
+    font-family:'DM Sans',system-ui,sans-serif; font-size:15px; font-weight:600;
+    letter-spacing:0.18em; text-transform:uppercase; color:#3D7EFF; margin-bottom:40px;
+  }
+  .other-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .other-card {
+    text-decoration:none; display:block; position:relative;
+    overflow:hidden; border-radius:4px; background:#141312;
+  }
+  .other-card-img-wrap { overflow:hidden; aspect-ratio:16/10; }
+  .other-card img {
+    width:100%; height:100%; object-fit:cover; display:block;
+    transition:transform 0.55s cubic-bezier(0.16,1,0.3,1),filter 0.55s;
+    filter:brightness(0.88);
+  }
+  .other-card:hover img { transform:scale(1.04); filter:brightness(1.0); }
+  .other-card-info { padding:16px 18px 18px; }
+  .other-card-cat {
+    font-family:'DM Sans',system-ui,sans-serif; font-size:10px; font-weight:600;
+    letter-spacing:0.14em; text-transform:uppercase;
+    color:#3D7EFF; margin-bottom:6px; display:block;
+  }
+  .other-card-row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .other-card-title {
+    font-family:'DM Sans',system-ui,sans-serif; font-size:15px; font-weight:600;
+    color:#EDECEA; letter-spacing:-0.01em; line-height:1.3;
+  }
+  .other-card-year {
+    font-family:'DM Sans',system-ui,sans-serif; font-size:14px; font-weight:500;
+    color:#767370; flex-shrink:0;
+  }
+  .other-card-arrow {
+    position:absolute; top:14px; right:16px; font-size:16px; color:#767370;
+    opacity:0; transition:opacity 0.2s,transform 0.2s;
+  }
+  .other-card:hover .other-card-arrow { opacity:1; color:#fff; transform:translate(2px,-2px); }
+  .home-cta-wrap { display:flex; justify-content:center; padding:24px 0 32px; background:#0B0B0B; border-top:1px solid rgba(237,236,234,0.12); }
+  .home-cta {
+    display:inline-flex; align-items:center; gap:10px;
+    padding:15px 34px; border:1px solid rgba(255,255,255,0.18); border-radius:40px;
+    color:#fff; font-family:'DM Sans',system-ui,sans-serif; font-size:13px; font-weight:600;
+    letter-spacing:0.1em; text-transform:uppercase; text-decoration:none;
+    transition:background 0.25s, border-color 0.25s, transform 0.25s;
+  }
+  .home-cta:hover { background:#3D7EFF; border-color:#3D7EFF; transform:translateY(-2px); }
+
+/* MOBILE / PHONE RESPONSIVE LAYOUT (<=768px) — matches index.html's
+   breakpoint; the scale-lock JS below is gated the same way. */
+@media (max-width: 768px) {
+  #scaleOuter { width: 100%; height: auto; }
+  #scaleRoot  { position: static; width: 100%; transform: none; }
+  #nav { width: 100%; padding: 14px 20px; }
+  .nav-links li:nth-child(1), .nav-links li:nth-child(2) { display: none; }
+  .nav-links { gap: 18px; }
+  .nav-links a { font-size: 0.72rem; }
+  #other-projects { padding: 50px 20px 60px; }
+  .other-grid { grid-template-columns: 1fr; gap: 16px; }
+  .home-cta-wrap { padding: 20px 20px 28px; }
+  .bench-wrap, .bench-slider-wrap, .bench-slider, .bench-slide, .bench-slide img { max-width: 100%; }
+  .bench-categories { gap: 10px; padding: 16px 10px; flex-wrap: wrap; }
+  .bench-cat { font-size: 11px; }
+  #nda-lock { padding: 60px 20px; }
+  .nda-lock-title { font-size: 22px; }
+  .nda-input { max-width: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav" role="navigation" aria-label="Main navigation">
+  <a href="../index.html" class="nav-logo">Argav Ganorkar</a>
+  <ul class="nav-links">
+    <li><a href="../index.html#projects"><span class="nav-icon nav-icon-work" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="6" y1="18" x2="14" y2="10"/><rect x="12" y="4" width="9" height="5" rx="1" transform="rotate(45 16.5 6.5)"/></svg></span><span class="nav-letter" style="--dx:-8px;--dy:-7px;--dr:-26deg;animation-delay:0.17s">W</span><span class="nav-letter" style="--dx:6px;--dy:8px;--dr:22deg;animation-delay:0.19s">o</span><span class="nav-letter" style="--dx:-7px;--dy:7px;--dr:-20deg;animation-delay:0.21s">r</span><span class="nav-letter" style="--dx:9px;--dy:-6px;--dr:24deg;animation-delay:0.23s">k</span></a></li>
+    <li><a href="../index.html#about"><span class="nav-icon nav-icon-user" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20c0-4.3 3.3-7.3 8.5-7.3s8.5 3 8.5 7.3"/><circle class="nav-head" cx="12" cy="7.5" r="4.2" transform-origin="12 11.7"/></svg></span>About</a></li>
+    <li><a href="../index.html#contact"><span class="nav-icon nav-icon-phone" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.3 21 3 13.7 3 4.9c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1L6.6 10.8z"/></svg></span><span class="nav-label-contact">Contact</span></a></li>
+    <li><a href="https://drive.google.com/file/d/1kNOE82xm_Y7EIxFvjOO_ZomoTuzheyhf/view?usp=sharing" target="_blank" rel="noopener" class="nav-resume">Resume ↗</a></li>
+  </ul>
+</nav>
+
+<!-- SCROLL TO TOP -->
+<button id="btn-top" aria-label="Scroll to top">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M3 10L8 5L13 10" stroke="#e8e6e3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+<div id="scaleOuter"><div id="scaleRoot">
+
+<section class="sec-img"><img src="../assets/images/ola/img-01.webp" width="1920" height="1080" fetchpriority="high" alt="Ola Roadster X+ — CMFG Project" data-hero-self="ola"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-02.webp" width="1920" height="805" loading="lazy" alt="Page 02"></section>
+<!-- BENCHMARKING INTERACTIVE -->
+<section id="sec-benchmarking" class="bench-wrap">
+  <div class="bench-categories">
+    <div class="bench-cat active" onclick="switchCategory(0)">Ice Engine</div>
+    <div class="bench-cat" onclick="switchCategory(1)">EVs</div>
+  </div>
+  <div class="bench-slider-wrap" id="bench-slider-wrap">
+    <div class="bench-slider" id="bench-slider">
+      <div class="bench-slide"><img src="../assets/images/ola/img-03.webp" width="1920" height="1080" loading="lazy" alt="Ice Engine Benchmarking"></div>
+      <div class="bench-slide"><img src="../assets/images/ola/img-04.webp" width="1920" height="1080" loading="lazy" alt="EVs Benchmarking"></div>
+    </div>
+    <div class="bench-click-zone left" onclick="benchNav(-1)"></div>
+    <div class="bench-click-zone right" onclick="benchNav(1)"></div>
+  </div>
+  <div class="bench-dots" id="bench-dots">
+    <div class="bench-dot active" onclick="benchGoto(0)"></div>
+    <div class="bench-dot" onclick="benchGoto(1)"></div>
+  </div>
+</section>
+
+<!-- PERSONA INTERACTIVE -->
+<section id="sec-persona" class="bench-wrap">
+  <div class="bench-categories">
+    <div class="bench-cat active" onclick="switchPersona(0)">Tech Enthusiast</div>
+    <div class="bench-cat" onclick="switchPersona(1)">Comfort Driven</div>
+  </div>
+  <img src="../assets/images/ola/img-05.webp" width="1920" height="202" loading="lazy" alt="Persona">
+  <div class="bench-slider-wrap" id="persona-slider-wrap">
+    <div class="bench-slider" id="persona-slider">
+      <div class="bench-slide"><img src="../assets/images/ola/img-06.webp" width="1920" height="1080" loading="lazy" alt="Persona: Tech Enthusiast"></div>
+      <div class="bench-slide"><img src="../assets/images/ola/img-07.webp" width="1920" height="1080" loading="lazy" alt="Persona: Comfort Driven"></div>
+    </div>
+    <div class="bench-click-zone left" onclick="personaNav(-1)"></div>
+    <div class="bench-click-zone right" onclick="personaNav(1)"></div>
+  </div>
+  <div class="bench-dots" id="persona-dots">
+    <div class="bench-dot active" onclick="personaGoto(0)"></div>
+    <div class="bench-dot" onclick="personaGoto(1)"></div>
+  </div>
+</section>
+<!-- MOOD BOARD INTERACTIVE -->
+<section id="sec-moodboard" class="bench-wrap">
+  <div class="bench-categories">
+    <div class="bench-cat active" onclick="switchMood(0)">Sensory Future</div>
+    <div class="bench-cat" onclick="switchMood(1)">Wise Tech</div>
+  </div>
+  <img src="../assets/images/ola/img-08.webp" width="1920" height="202" loading="lazy" alt="Mood Board">
+  <div class="bench-slider-wrap" id="mood-slider-wrap">
+    <div class="bench-slider" id="mood-slider">
+      <div class="bench-slide"><img src="../assets/images/ola/img-09.webp" width="1920" height="1080" loading="lazy" alt="Mood Board: Sensory Future"></div>
+      <div class="bench-slide"><img src="../assets/images/ola/img-10.webp" width="1920" height="1080" loading="lazy" alt="Mood Board: Wise Tech"></div>
+    </div>
+    <div class="bench-click-zone left" onclick="moodNav(-1)"></div>
+    <div class="bench-click-zone right" onclick="moodNav(1)"></div>
+  </div>
+  <div class="bench-dots" id="mood-dots">
+    <div class="bench-dot active" onclick="moodGoto(0)"></div>
+    <div class="bench-dot" onclick="moodGoto(1)"></div>
+  </div>
+</section>
+<!-- NDA LOCK -->
+<section id="nda-lock">
+  <div class="nda-lock-inner">
+    <svg class="nda-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="4" y="11" width="16" height="10" rx="2"/>
+      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+    </svg>
+    <h2 class="nda-lock-title">Rest of this project is under NDA</h2>
+    <p class="nda-lock-copy">The remaining pages are confidential. If you have access, enter the password below to continue — or browse another project instead.</p>
+    <form id="nda-form" class="nda-form" autocomplete="off">
+      <input type="password" id="nda-input" class="nda-input" placeholder="Password" aria-label="NDA password">
+      <button type="submit" class="nda-submit">Unlock</button>
+    </form>
+    <p id="nda-error" class="nda-error">Incorrect password — try again.</p>
+  </div>
+</section>
+<div id="nda-gated">
+<section class="sec-img"><img src="../assets/images/ola/img-11.webp" width="1920" height="1080" loading="lazy" alt="Page 11"></section>
+<!-- BENCHMARKING INTERACTIVE 2 -->
+<section id="sec-benchmarking-2" class="bench-wrap">
+  <div class="bench-categories">
+    <div class="bench-cat active" onclick="switchCategory2(0)">Transparency</div>
+    <div class="bench-cat" onclick="switchCategory2(1)">Wheels</div>
+    <div class="bench-cat" onclick="switchCategory2(2)">Graphics</div>
+  </div>
+  <div class="bench-slider-wrap" id="bench2-slider-wrap">
+    <div class="bench-slider" id="bench2-slider">
+      <div class="bench-slide"><img src="../assets/images/ola/img-12.webp" width="1920" height="1080" loading="lazy" alt="Transparency Benchmarking"></div>
+      <div class="bench-slide"><img src="../assets/images/ola/img-13.webp" width="1920" height="1080" loading="lazy" alt="Wheels Benchmarking"></div>
+      <div class="bench-slide"><img src="../assets/images/ola/img-14.webp" width="1920" height="1080" loading="lazy" alt="Graphics Benchmarking"></div>
+    </div>
+    <div class="bench-click-zone left" onclick="bench2Nav(-1)"></div>
+    <div class="bench-click-zone right" onclick="bench2Nav(1)"></div>
+  </div>
+  <div class="bench-dots" id="bench2-dots">
+    <div class="bench-dot active" onclick="bench2Goto(0)"></div>
+    <div class="bench-dot" onclick="bench2Goto(1)"></div>
+    <div class="bench-dot" onclick="bench2Goto(2)"></div>
+  </div>
+</section>
+<section class="sec-img"><img src="../assets/images/ola/img-15.webp" width="1920" height="202" loading="lazy" alt="Page 15"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-16.webp" width="1920" height="1080" loading="lazy" alt="Page 16"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-17.webp" width="1920" height="1080" loading="lazy" alt="Page 17"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-18.webp" width="1920" height="1080" loading="lazy" alt="Page 18"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-19.webp" width="1920" height="1080" loading="lazy" alt="Page 19"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-20.webp" width="1920" height="1080" loading="lazy" alt="Page 20"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-21.webp" width="1920" height="834" loading="lazy" alt="Page 21"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-22.webp" width="1920" height="1080" loading="lazy" alt="Page 22"></section>
+<section class="sec-img"><img src="../assets/images/ola/img-23.webp" width="1920" height="1457" loading="lazy" alt="Page 23"></section>
+</div>
+
+<script>
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 50), {passive:true});
+
+const btnTop = document.getElementById('btn-top');
+window.addEventListener('scroll', () => btnTop.classList.toggle('visible', window.scrollY > 300), {passive:true});
+btnTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+
+// ── BENCHMARKING CAROUSEL ──
+let benchCurrent = 0;
+const benchSlider = document.getElementById('bench-slider');
+const benchDots = document.querySelectorAll('#bench-dots .bench-dot');
+const benchCaps = document.querySelectorAll('#sec-benchmarking .bench-cat');
+
+function benchGoto(idx) {
+  benchCurrent = idx;
+  benchSlider.style.transform = `translateX(${-idx * 100}%)`;
+  benchDots.forEach((d,i) => d.classList.toggle('active', i===idx));
+  benchCaps.forEach((c,i) => c.classList.toggle('active', i===idx));
+}
+function benchNav(dir) {
+  const slides = benchSlider.querySelectorAll('.bench-slide');
+  benchCurrent = (benchCurrent + dir + slides.length) % slides.length;
+  benchGoto(benchCurrent);
+}
+function switchCategory(idx) { benchGoto(idx); }
+
+let bTouchX = 0;
+const bWrap = document.getElementById('bench-slider-wrap');
+bWrap.addEventListener('touchstart', e => bTouchX = e.touches[0].clientX, {passive:true});
+bWrap.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - bTouchX;
+  if (Math.abs(dx) > 40) benchNav(dx < 0 ? 1 : -1);
+});
+
+// ── PERSONA CAROUSEL ──
+let personaCurrent = 0;
+const personaSlider = document.getElementById('persona-slider');
+const personaDots = document.querySelectorAll('#persona-dots .bench-dot');
+const personaCaps = document.querySelectorAll('#sec-persona .bench-cat');
+
+function personaGoto(idx) {
+  personaCurrent = idx;
+  personaSlider.style.transform = `translateX(${-idx * 100}%)`;
+  personaDots.forEach((d,i) => d.classList.toggle('active', i===idx));
+  personaCaps.forEach((c,i) => c.classList.toggle('active', i===idx));
+}
+function personaNav(dir) {
+  const slides = personaSlider.querySelectorAll('.bench-slide');
+  personaCurrent = (personaCurrent + dir + slides.length) % slides.length;
+  personaGoto(personaCurrent);
+}
+function switchPersona(idx) { personaGoto(idx); }
+
+let pTouchX = 0;
+const pWrap = document.getElementById('persona-slider-wrap');
+pWrap.addEventListener('touchstart', e => pTouchX = e.touches[0].clientX, {passive:true});
+pWrap.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - pTouchX;
+  if (Math.abs(dx) > 40) personaNav(dx < 0 ? 1 : -1);
+});
+
+// ── MOOD BOARD CAROUSEL ──
+let moodCurrent = 0;
+const moodSlider = document.getElementById('mood-slider');
+const moodDots = document.querySelectorAll('#mood-dots .bench-dot');
+const moodCaps = document.querySelectorAll('#sec-moodboard .bench-cat');
+
+function moodGoto(idx) {
+  moodCurrent = idx;
+  moodSlider.style.transform = `translateX(${-idx * 100}%)`;
+  moodDots.forEach((d,i) => d.classList.toggle('active', i===idx));
+  moodCaps.forEach((c,i) => c.classList.toggle('active', i===idx));
+}
+function moodNav(dir) {
+  const slides = moodSlider.querySelectorAll('.bench-slide');
+  moodCurrent = (moodCurrent + dir + slides.length) % slides.length;
+  moodGoto(moodCurrent);
+}
+function switchMood(idx) { moodGoto(idx); }
+
+let mTouchX = 0;
+const mWrap = document.getElementById('mood-slider-wrap');
+mWrap.addEventListener('touchstart', e => mTouchX = e.touches[0].clientX, {passive:true});
+mWrap.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - mTouchX;
+  if (Math.abs(dx) > 40) moodNav(dx < 0 ? 1 : -1);
+});
+
+// ── BENCHMARKING CAROUSEL 2 (Transparency / Wheels / Graphics) ──
+let bench2Current = 0;
+const bench2Slider = document.getElementById('bench2-slider');
+const bench2Dots = document.querySelectorAll('#bench2-dots .bench-dot');
+const bench2Caps = document.querySelectorAll('#sec-benchmarking-2 .bench-cat');
+
+function bench2Goto(idx) {
+  bench2Current = idx;
+  bench2Slider.style.transform = `translateX(${-idx * 100}%)`;
+  bench2Dots.forEach((d,i) => d.classList.toggle('active', i===idx));
+  bench2Caps.forEach((c,i) => c.classList.toggle('active', i===idx));
+}
+function bench2Nav(dir) {
+  const slides = bench2Slider.querySelectorAll('.bench-slide');
+  bench2Current = (bench2Current + dir + slides.length) % slides.length;
+  bench2Goto(bench2Current);
+}
+function switchCategory2(idx) { bench2Goto(idx); }
+
+let b2TouchX = 0;
+const b2Wrap = document.getElementById('bench2-slider-wrap');
+b2Wrap.addEventListener('touchstart', e => b2TouchX = e.touches[0].clientX, {passive:true});
+b2Wrap.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - b2TouchX;
+  if (Math.abs(dx) > 40) bench2Nav(dx < 0 ? 1 : -1);
+});
+
+// ── NDA LOCK ──
+// Client-side only (no backend on this static site) — this is a soft
+// gate to deter casual browsing past the confidential sections, not
+// real security; the password is visible to anyone who reads the page
+// source. Change NDA_PASSWORD below to whatever you want to share.
+var NDA_PASSWORD = '070809';
+var ndaForm = document.getElementById('nda-form');
+var ndaInput = document.getElementById('nda-input');
+var ndaError = document.getElementById('nda-error');
+var ndaGated = document.getElementById('nda-gated');
+var ndaLock = document.getElementById('nda-lock');
+ndaForm.addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (ndaInput.value.trim().toLowerCase() === NDA_PASSWORD.toLowerCase()) {
+    ndaGated.style.display = 'block';
+    ndaLock.style.display = 'none';
+    window.dispatchEvent(new Event('resize'));
+  } else {
+    ndaError.classList.add('visible');
+    ndaInput.value = '';
+    ndaInput.focus();
+  }
+});
+</script>
+
+<!-- OTHER PROJECTS -->
+<section id="other-projects">
+  <p class="other-heading">View other projects</p>
+  <div class="other-grid">
+
+    <a class="other-card" href="bajaj-portfolio_11.html">
+      <div class="other-card-img-wrap"><img src="../assets/images/ola/img-24.webp" width="1000" height="563" loading="lazy" alt="Bajaj Pulsar NS 400" data-hero-link="bajaj"></div>
+      <div class="other-card-info">
+        <span class="other-card-cat">CMFG Design</span>
+        <div class="other-card-row">
+          <p class="other-card-title">Bajaj Pulsar NS 400</p>
+          <span class="other-card-year">2026</span>
+        </div>
+      </div>
+      <span class="other-card-arrow">↗</span>
+    </a>
+
+    <a class="other-card" href="triumph-portfolio_2.html">
+      <div class="other-card-img-wrap"><img src="../assets/images/ola/img-25.webp" width="1000" height="563" loading="lazy" alt="Triumph Bobber" data-hero-link="triumph"></div>
+      <div class="other-card-info">
+        <span class="other-card-cat">CMFG Design</span>
+        <div class="other-card-row">
+          <p class="other-card-title">Triumph Bobber</p>
+          <span class="other-card-year">2025</span>
+        </div>
+      </div>
+      <span class="other-card-arrow">↗</span>
+    </a>
+
+    <a class="other-card" href="weava-portfolio_1.html">
+      <div class="other-card-img-wrap"><img src="../assets/images/ola/img-26.webp" width="1000" height="563" loading="lazy" alt="Weava" data-hero-link="weava"></div>
+      <div class="other-card-info">
+        <span class="other-card-cat">Material Exploration</span>
+        <div class="other-card-row">
+          <p class="other-card-title">Weava</p>
+          <span class="other-card-year">2026</span>
+        </div>
+      </div>
+      <span class="other-card-arrow">↗</span>
+    </a>
+
+  </div>
+</section>
+
+<div class="home-cta-wrap">
+  <a href="../index.html#projects" class="home-cta">Home ↑</a>
+</div>
+
+</div></div>
+
+<script>
+(function () {
+  var DESIGN_WIDTH = 1920;
+  var navEl   = document.getElementById('nav');
+  var rootEl  = document.getElementById('scaleRoot');
+  var outerEl = document.getElementById('scaleOuter');
+  if (!navEl || !rootEl || !outerEl) return;
+
+  var applying = false;
+  function apply() {
+    if (applying) return;
+    applying = true;
+    if (window.innerWidth <= 768) {
+      navEl.style.transform = '';
+      rootEl.style.transform = '';
+      outerEl.style.height = '';
+      applying = false;
+      return;
+    }
+    var scale = window.innerWidth / DESIGN_WIDTH;
+    var t = 'scale(' + scale + ')';
+    navEl.style.transform  = t;
+    rootEl.style.transform = t;
+    outerEl.style.height = Math.ceil(rootEl.offsetHeight * scale) + 'px';
+    applying = false;
+  }
+
+  window.addEventListener('resize', apply, { passive: true });
+  window.addEventListener('load', apply);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(apply); }
+  setTimeout(apply, 50);
+  setTimeout(apply, 400);
+  apply();
+})();
+</script>
+
+<!-- Fallback fade-out for browsers without native View Transitions
+     (Firefox) — Chrome/Safari get the automatic thumbnail-to-hero morph
+     via the @view-transition CSS rule above with no JS needed. Skipped
+     for reduced-motion and modified clicks (new tab/window). pageshow
+     clears the exit class on bfcache back/forward restores so a "back"
+     navigation isn't stuck invisible. -->
+<script>
+(function () {
+  if ('startViewTransition' in document) return;
+  var EXIT_MS = 200;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.other-card').forEach(function (a) {
+    var href = a.getAttribute('href');
+    if (!href || href.charAt(0) === '#') return;
+    a.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      if (reduceMotion) return;
+      e.preventDefault();
+      document.body.classList.add('page-exit');
+      setTimeout(function () { window.location.href = href; }, EXIT_MS);
+    });
+  });
+  window.addEventListener('pageshow', function () { document.body.classList.remove('page-exit'); });
+})();
+</script>
+
+<!-- Leaving this page: tag the Other Projects thumbnail matching the
+     destination, or skip the transition entirely if going anywhere
+     that isn't a sibling project (home, external link, etc.). Arrival-
+     side tagging for coming back here lives in the <head> script. -->
+<script>
+(function () {
+  if (!('startViewTransition' in document)) return;
+  var FILE_TO_KEY = {
+    'bajaj-portfolio_11.html': 'bajaj',
+    'weava-portfolio_1.html': 'weava',
+    'triumph-portfolio_2.html': 'triumph',
+    'ola-portfolio.html': 'ola'
+  };
+  function keyFromUrl(url) {
+    if (!url) return null;
+    try { return FILE_TO_KEY[new URL(url, location.href).pathname.split('/').pop()] || null; }
+    catch (e) { return null; }
+  }
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    var destKey = keyFromUrl(e.activation && e.activation.entry && e.activation.entry.url);
+    if (!destKey) { e.viewTransition.skipTransition(); return; }
+    var el = document.querySelector('[data-hero-link="' + destKey + '"]');
+    if (el) el.style.viewTransitionName = 'project-hero';
+  });
+})();
+</script>
+
+</body>
+</html>

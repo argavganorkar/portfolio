@@ -13,6 +13,10 @@ assets/images/NEW FInal.png
 # Working reference file used to extract hero images — not served
 only for doodle n image reference in hero.html
 
+# Source Figma export used to build the Ola project page — already
+# rasterized into assets/images/ola/, not served directly
+assets/images/Ola Electric Medium quality.pdf
+
 # OS/editor cruft
 .DS_Store
 Thumbs.db
